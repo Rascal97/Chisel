@@ -1,22 +1,26 @@
 package team.chisel.common.block;
 
-import java.util.List;
-
 import javax.annotation.ParametersAreNonnullByDefault;
 
 import lombok.Getter;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockPane;
 import net.minecraft.block.material.Material;
 import net.minecraft.block.state.BlockStateContainer;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.particle.ParticleManager;
 import net.minecraft.creativetab.CreativeTabs;
-import net.minecraft.item.Item;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.boss.EntityDragon;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.BlockRenderLayer;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumFacing.Axis;
 import net.minecraft.util.NonNullList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -31,6 +35,8 @@ public class BlockCarvablePane extends BlockPane implements ICarvable {
 
     // TODO this class is completely temporary. Need to make a helper object which does all this ICarvable logic
     
+    private final BlockRenderLayer layer;
+    
     @Getter(onMethod = @__({@Override}))
     public final PropertyAnyInteger metaProp;
     
@@ -41,10 +47,25 @@ public class BlockCarvablePane extends BlockPane implements ICarvable {
     private final int maxVariation;
 
     private final BlockStateContainer states;
+
+    private boolean dragonProof = false;
+
+    public static BlockCarvablePane cutout(Material material, int index, int max, VariationData... variations) {
+        return new BlockCarvablePane(material, BlockRenderLayer.CUTOUT_MIPPED, true, index, max, variations);
+    }
     
-    public BlockCarvablePane(Material material, int index, int max, VariationData... variations) {
-        super(material, true);
+    public static BlockCarvablePane cutoutNoDrop(Material material, int index, int max, VariationData... variations) {
+        return new BlockCarvablePane(material, BlockRenderLayer.CUTOUT_MIPPED, false, index, max, variations);
+    }
+    
+    public static BlockCarvablePane translucentNoDrop(Material material, int index, int max, VariationData... variations) {
+        return new BlockCarvablePane(material, BlockRenderLayer.TRANSLUCENT, false, index, max, variations);
+    }
+    
+    public BlockCarvablePane(Material material, BlockRenderLayer layer, boolean canDrop, int index, int max, VariationData... variations) {
+        super(material, canDrop);
         setCreativeTab(ChiselTabs.tab);
+        this.layer = layer;
         this.index = index;
         this.variations = variations;
         this.maxVariation = max;
@@ -66,7 +87,7 @@ public class BlockCarvablePane extends BlockPane implements ICarvable {
     @Override
     public IBlockState getStateFromMeta(int meta) {
         this.useNeighborBrightness = true;
-        return getBlockState().getBaseState().withProperty(metaProp, meta);
+        return getBlockState().getBaseState().withProperty(metaProp, clampMeta(meta));
     }
 
     @Override
@@ -113,6 +134,11 @@ public class BlockCarvablePane extends BlockPane implements ICarvable {
         ClientUtil.addDestroyEffects(world, pos, world.getBlockState(pos));
         return true;
     }
+    
+    @Override
+    public BlockRenderLayer getBlockLayer() {
+        return layer;
+    }
 
     @Override
     public int getVariationIndex(IBlockState state) {
@@ -128,10 +154,37 @@ public class BlockCarvablePane extends BlockPane implements ICarvable {
     public int getIndex() {
         return this.index;
     }
+    
+    private int clampMeta(int meta) {
+        return MathHelper.clamp(meta, 0, this.variations.length - 1);
+    }
 
-    @SuppressWarnings("null") // No type annotations
     @Override
     public VariationData getVariationData(int meta) {
-        return this.variations[MathHelper.clamp(meta, 0, this.variations.length - 1)];
+        return this.variations[clampMeta(meta)];
+    }
+
+    public Block setDragonProof() {
+        dragonProof = true;
+        return this;
+    }
+
+    @Override
+    public boolean canEntityDestroy(IBlockState state, IBlockAccess world, BlockPos pos, Entity entity) {
+        if (entity instanceof EntityDragon){
+            return !dragonProof;
+        }else{
+            return super.canEntityDestroy(state, world, pos, entity);
+        }
+    }
+    
+    @SideOnly(Side.CLIENT)
+    @Override
+    public boolean shouldSideBeRendered(IBlockState blockState, IBlockAccess blockAccess, BlockPos pos, EnumFacing side) {
+        if (!super.shouldSideBeRendered(blockState, blockAccess, pos, side)) {
+            if (side.getAxis() != Axis.Y) return false;
+            return blockAccess.getBlockState(pos.offset(side)).getActualState(blockAccess, pos.offset(side)) != blockState;
+        }
+        return true;
     }
 }

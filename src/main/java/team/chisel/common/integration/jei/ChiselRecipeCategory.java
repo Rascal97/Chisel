@@ -14,6 +14,7 @@ import mezz.jei.api.IGuiHelper;
 import mezz.jei.api.gui.IDrawable;
 import mezz.jei.api.gui.IRecipeLayout;
 import mezz.jei.api.ingredients.IIngredients;
+import mezz.jei.api.ingredients.VanillaTypes;
 import mezz.jei.api.recipe.IFocus;
 import mezz.jei.api.recipe.IRecipeCategory;
 import net.minecraft.client.Minecraft;
@@ -70,13 +71,14 @@ public class ChiselRecipeCategory implements IRecipeCategory<ChiselRecipeWrapper
 
     @Override
     public void setRecipe(IRecipeLayout recipeLayout, ChiselRecipeWrapper recipeWrapper, IIngredients ingredients) {
+        this.layout = recipeLayout;
         IFocus<?> focus = (this.focus = recipeLayout.getFocus());
         
         recipeLayout.getItemStacks().init(0, focus == null || focus.getMode() == IFocus.Mode.INPUT, 73, 3);
         if (focus != null) {
             recipeLayout.getItemStacks().set(0, (ItemStack) focus.getValue()); 
         } else {
-            recipeLayout.getItemStacks().set(0, ingredients.getInputs(ItemStack.class).stream().flatMap(l -> l.stream()).collect(Collectors.toList()));
+            recipeLayout.getItemStacks().set(0, ingredients.getInputs(VanillaTypes.ITEM).stream().flatMap(l -> l.stream()).collect(Collectors.toList()));
         }
 
         int rowWidth = 9;
@@ -84,7 +86,7 @@ public class ChiselRecipeCategory implements IRecipeCategory<ChiselRecipeWrapper
         int xStart = 2;
         int yStart = 36;
 
-        int outputs = ingredients.getOutputs(ItemStack.class).size();
+        int outputs = ingredients.getOutputs(VanillaTypes.ITEM).size();
         int MAX_SLOTS = 45;
         
         List<List<ItemStack>> stacks = Lists.newArrayList();
@@ -95,7 +97,7 @@ public class ChiselRecipeCategory implements IRecipeCategory<ChiselRecipeWrapper
                 stacks.add(Lists.newArrayList());
             }
          
-            ItemStack stack = (ItemStack) ingredients.getOutputs(ItemStack.class).get(i).get(0);
+            ItemStack stack = (ItemStack) ingredients.getOutputs(VanillaTypes.ITEM).get(i).get(0);
             stacks.get(slot).add(stack.copy());
         }
         
@@ -116,7 +118,6 @@ public class ChiselRecipeCategory implements IRecipeCategory<ChiselRecipeWrapper
         }
     }
 
-    @SuppressWarnings("null")
     @Override
     public List<String> getTooltipStrings(int mouseX, int mouseY) {
         return Collections.emptyList();

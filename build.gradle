@@ -17,7 +17,7 @@ buildscript {
 }
 plugins {
     id 'net.franz-becker.gradle-lombok' version '1.5'
-	id 'com.matthewprenger.cursegradle' version '1.1.0'
+	id 'com.matthewprenger.cursegradle' version '1.4.0'
 }
 
 apply plugin: 'net.minecraftforge.gradle.forge'
@@ -69,7 +69,7 @@ repositories {
 dependencies {
 	deobfCompile "team.chisel.ctm:CTM:MC${minecraft_version}-${ctm_version}"
 	deobfCompile "mcp.mobius.waila:Hwyla:${hwyla_version}:api"
-	deobfCompile "mezz.jei:jei_1.12:${jei_version}"
+	deobfCompile "mezz.jei:jei_${minecraft_version}:${jei_version}"
     deobfCompile "com.wayoftime.bloodmagic:BloodMagic:${bm_version}:api"
 }
 
@@ -190,7 +190,6 @@ curseforge {
         changelog = System.getenv('CHANGELOG') == null || System.getenv('CHANGELOG').equals('none') ? getChangelogText() : System.getenv('CHANGELOG')
         changelogType = 'html'
         releaseType = project.curse_type
-       	addGameVersion '1.12.1'
 		addGameVersion '1.12.2'
         mainArtifact(jar) {
             displayName = "Chisel - ${version}"
@@ -198,7 +197,6 @@ curseforge {
         relations {
         	requiredLibrary 'ctm'
         }
-        addArtifact(apiJar)
     }
 }
 
